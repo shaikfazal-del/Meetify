@@ -16,13 +16,12 @@ services:
       - key: CLIENT_URL
         fromService:
           name: meetify-frontend
-          type: web
+          type: static
           property: url
 
   # ── Frontend: Static Site ─────────────────────────────────────────────────
-  - type: web
+  - type: static
     name: meetify-frontend
-    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: build

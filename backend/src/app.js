@@ -38,6 +38,16 @@ app.use(express.urlencoded({ limit: "40kb", extended: true }));
 
 app.use("/api/v1/users", userRoutes);
 
+// Health check — Render pings GET / to verify the service is alive
+app.get("/", (req, res) => {
+    res.status(200).json({
+        status: "ok",
+        service: "Meetify Backend API",
+        version: "1.0.0",
+        endpoints: ["/api/v1/users"],
+    });
+});
+
 const start = async () => {
     try {
         const mongoUri = process.env.MONGO_URI;

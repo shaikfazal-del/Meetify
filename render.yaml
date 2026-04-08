@@ -1,0 +1,32 @@
+services:
+  # ── Backend: Node.js Web Service ─────────────────────────────────────────
+  - type: web
+    name: meetify-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8000
+      - key: MONGO_URI
+        sync: false   # Set manually in Render dashboard (sensitive)
+      - key: CLIENT_URL
+        sync: false   # Set to your frontend URL after it's deployed
+
+  # ── Frontend: Static Site ─────────────────────────────────────────────────
+  - type: web
+    name: meetify-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    envVars:
+      - key: REACT_APP_BACKEND_URL
+        sync: false   # Set to your backend Render URL after backend is deployed
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

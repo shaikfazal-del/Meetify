@@ -11,8 +11,13 @@ services:
         value: production
       - key: MONGO_URI
         sync: false
+      - key: PORT
+        value: 10000
       - key: CLIENT_URL
-        value: https://meetify-frontend.onrender.com
+        fromService:
+          name: meetify-frontend
+          type: web
+          property: url
 
   # ── Frontend: Static Site ─────────────────────────────────────────────────
   - type: web
@@ -23,7 +28,10 @@ services:
     staticPublishPath: build
     envVars:
       - key: REACT_APP_BACKEND_URL
-        value: https://meetify-iv9d.onrender.com
+        fromService:
+          name: meetify-backend
+          type: web
+          property: url
     routes:
       - type: rewrite
         source: /*

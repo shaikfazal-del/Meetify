@@ -16,13 +16,19 @@ const io = connectToSocket(server);
 
 app.set("port", (process.env.PORT || 8000));
 
-const rawOrigin = process.env.CLIENT_URL ? process.env.CLIENT_URL.trim() : "*";
-const allowedOrigin = rawOrigin.length > 0 ? rawOrigin : "*";
+// Sanitize CLIENT_URL: trim whitespace AND strip all hidden/control characters
+// This prevents ERR_INVALID_CHAR crashes in the CORS header setter
+const rawOrigin = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.replace(/[^\x20-\x7E]/g, "").trim()
+    : "";
+const allowedOrigin = rawOrigin.length > 0 ? rawOrigin : false;
 
+// NOTE: credentials: true is incompatible with wildcard origin "*".
+// When allowedOrigin is false (no CLIENT_URL set), we disable credentials too.
 app.use(helmet());
 app.use(cors({
-    origin: allowedOrigin,
-    credentials: true,
+    origin: allowedOrigin || "*",
+    credentials: !!allowedOrigin,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }));

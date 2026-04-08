@@ -16,10 +16,15 @@ const io = connectToSocket(server);
 
 app.set("port", (process.env.PORT || 8000));
 
-app.use(helmet()); 
+const rawOrigin = process.env.CLIENT_URL ? process.env.CLIENT_URL.trim() : "*";
+const allowedOrigin = rawOrigin.length > 0 ? rawOrigin : "*";
+
+app.use(helmet());
 app.use(cors({
-    origin: process.env.CLIENT_URL || "*",
-    credentials: true
+    origin: allowedOrigin,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(morgan("dev"));
 app.use(express.json({ limit: "40kb" }));

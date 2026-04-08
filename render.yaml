@@ -9,12 +9,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 8000
       - key: MONGO_URI
-        sync: false   # Set manually in Render dashboard (sensitive)
+        sync: false
       - key: CLIENT_URL
-        sync: false   # Set to your frontend URL after it's deployed
+        value: https://meetify-frontend.onrender.com
 
   # ── Frontend: Static Site ─────────────────────────────────────────────────
   - type: web
@@ -25,7 +23,7 @@ services:
     staticPublishPath: build
     envVars:
       - key: REACT_APP_BACKEND_URL
-        sync: false   # Set to your backend Render URL after backend is deployed
+        value: https://meetify-iv9d.onrender.com
     routes:
       - type: rewrite
         source: /*

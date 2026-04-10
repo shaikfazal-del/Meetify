@@ -41,11 +41,14 @@ const login = async (req, res) => {
 const register = async (req, res) => {
     const { name, username, password } = req.body;
 
+    if (!name || !username || !password) {
+        return res.status(400).json({ message: "Please provide name, username, and password" });
+    }
 
     try {
         const existingUser = await User.findOne({ username });
         if (existingUser) {
-            return res.status(httpStatus.FOUND).json({ message: "User already exists" });
+            return res.status(409).json({ message: "Username already taken. Please choose a different one." });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);

@@ -6,13 +6,19 @@ let messages = {}
 let timeOnline = {}
 
 export const connectToSocket = (server) => {
+    const rawOrigin = process.env.CLIENT_URL
+        ? process.env.CLIENT_URL.replace(/[^\x20-\x7E]/g, "").trim()
+        : "";
+    const allowedOrigin = rawOrigin.length > 0 ? rawOrigin : "*";
+
     const io = new Server(server, {
         cors: {
-            origin: "*",
+            origin: allowedOrigin,
             methods: ["GET", "POST"],
-            allowedHeaders: ["*"],
-            credentials: true
-        }
+            allowedHeaders: ["Content-Type", "Authorization"],
+            credentials: allowedOrigin !== "*"
+        },
+        transports: ["websocket", "polling"]
     });
 
 

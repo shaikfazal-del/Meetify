@@ -30,11 +30,16 @@ export const AuthProvider = ({ children }) => {
                 password: password
             })
 
-
             if (request.status === httpStatus.CREATED) {
                 return request.data.message;
             }
         } catch (err) {
+            if (!err.response) {
+                // Network error - server unreachable
+                const networkErr = new Error();
+                networkErr.response = { data: { message: "Cannot reach server. Please check your connection or try again later." } };
+                throw networkErr;
+            }
             throw err;
         }
     }
@@ -51,6 +56,11 @@ export const AuthProvider = ({ children }) => {
                 router("/home")
             }
         } catch (err) {
+            if (!err.response) {
+                const networkErr = new Error();
+                networkErr.response = { data: { message: "Cannot reach server. Please check your connection or try again later." } };
+                throw networkErr;
+            }
             throw err;
         }
     }

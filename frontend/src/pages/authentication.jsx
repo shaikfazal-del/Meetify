@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Box, Button, TextField, Typography, Paper, Grid, Snackbar, Container, Alert } from '@mui/material';
+import { Box, Button, TextField, Typography, Paper, Grid, Snackbar, Container, Alert, CircularProgress } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
 import VideocamIcon from '@mui/icons-material/Videocam';
@@ -14,16 +14,43 @@ export default function Authentication() {
     const [message, setMessage] = useState("");
     const [formState, setFormState] = useState(0); // 0 = Login, 1 = Register
     const [open, setOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const { handleRegister, handleLogin } = useContext(AuthContext);
 
     const handleAuth = async () => {
         setError("");
+
+        // --- Client-side validation ---
+        if (!username.trim()) {
+            setError("Username is required.");
+            return;
+        }
+        if (username.trim().length < 3) {
+            setError("Username must be at least 3 characters.");
+            return;
+        }
+        if (!password) {
+            setError("Password is required.");
+            return;
+        }
+        if (formState === 1) {
+            if (!name.trim()) {
+                setError("Full name is required.");
+                return;
+            }
+            if (password.length < 6) {
+                setError("Password must be at least 6 characters.");
+                return;
+            }
+        }
+
+        setLoading(true);
         try {
             if (formState === 0) {
-                await handleLogin(username, password);
+                await handleLogin(username.trim(), password);
             } else {
-                let result = await handleRegister(name, username, password);
+                const result = await handleRegister(name.trim(), username.trim(), password);
                 setUsername("");
                 setPassword("");
                 setName("");
@@ -32,10 +59,13 @@ export default function Authentication() {
                 setFormState(0);
             }
         } catch (err) {
-            let msg = err.response?.data?.message || "Something went wrong. Server might be down.";
+            const msg = err.response?.data?.message || "Something went wrong. The server might be down — please try again.";
             setError(msg);
+        } finally {
+            setLoading(false);
         }
     };
+
 
     return (
         <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -93,16 +123,18 @@ export default function Authentication() {
                                 <Button 
                                     fullWidth 
                                     variant={formState === 0 ? "contained" : "text"} 
-                                    onClick={() => setFormState(0)}
+                                    onClick={() => { setFormState(0); setError(""); }}
                                     color={formState === 0 ? "primary" : "inherit"}
+                                    disabled={loading}
                                 >
                                     Sign In
                                 </Button>
                                 <Button 
                                     fullWidth 
                                     variant={formState === 1 ? "contained" : "text"} 
-                                    onClick={() => setFormState(1)}
+                                    onClick={() => { setFormState(1); setError(""); }}
                                     color={formState === 1 ? "secondary" : "inherit"}
+                                    disabled={loading}
                                 >
                                     Sign Up
                                 </Button>
@@ -121,8 +153,19 @@ export default function Authentication() {
                                     </Alert>
                                 )}
 
-                                <Button fullWidth variant="contained" size="large" sx={{ mt: 4, mb: 2, py: 1.5 }} onClick={handleAuth}>
-                                    {formState === 0 ? "Login to Account" : "Register Now"}
+                                <Button 
+                                    fullWidth 
+                                    variant="contained" 
+                                    size="large" 
+                                    sx={{ mt: 4, mb: 2, py: 1.5, position: 'relative' }} 
+                                    onClick={handleAuth}
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <CircularProgress size={24} sx={{ color: 'rgba(255,255,255,0.8)' }} />
+                                    ) : (
+                                        formState === 0 ? "Login to Account" : "Register Now"
+                                    )}
                                 </Button>
                             </Box>
                         </Paper>

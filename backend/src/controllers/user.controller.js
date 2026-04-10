@@ -1,40 +1,48 @@
 import httpStatus from "http-status";
 import { User } from "../models/user.model.js";
-import bcrypt, { hash } from "bcrypt"
+import bcrypt from "bcrypt"
 
 import crypto from "crypto"
 import { Meeting } from "../models/meeting.model.js";
+
+// Escape special regex characters from user input to prevent MongoDB regex injection/crashes
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const login = async (req, res) => {
     let { username, password } = req.body;
 
     if (!username || !password) {
-        return res.status(400).json({ message: "Please Provide" });
+        return res.status(400).json({ message: "Please provide username and password." });
     }
-    
+
     username = username.trim();
 
+    if (username.length < 3 || username.length > 50) {
+        return res.status(400).json({ message: "Username must be between 3 and 50 characters." });
+    }
+
     try {
-        const user = await User.findOne({ username: { $regex: `^${username}$`, $options: 'i' } });
+        const safeUsername = escapeRegex(username);
+        const user = await User.findOne({ username: { $regex: `^${safeUsername}$`, $options: 'i' } });
+
         if (!user) {
-            return res.status(httpStatus.NOT_FOUND).json({ message: "User Not Found" });
+            return res.status(httpStatus.NOT_FOUND).json({ message: "No account found with that username. Please register first." });
         }
 
-
-        let isPasswordCorrect = await bcrypt.compare(password, user.password)
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
         if (isPasswordCorrect) {
-            let token = crypto.randomBytes(20).toString("hex");
-
+            const token = crypto.randomBytes(20).toString("hex");
             user.token = token;
             await user.save();
             return res.status(httpStatus.OK).json({ token: token })
         } else {
-            return res.status(httpStatus.UNAUTHORIZED).json({ message: "Invalid Username or password" })
+            return res.status(httpStatus.UNAUTHORIZED).json({ message: "Incorrect password. Please try again." })
         }
 
     } catch (e) {
         console.error("Login error:", e);
-        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" })
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Login failed due to a server error. Please try again later." })
     }
 }
 
@@ -43,16 +51,26 @@ const register = async (req, res) => {
     let { name, username, password } = req.body;
 
     if (!name || !username || !password) {
-        return res.status(400).json({ message: "Please provide name, username, and password" });
+        return res.status(400).json({ message: "Please provide name, username, and password." });
     }
 
     username = username.trim();
     name = name.trim();
 
+    if (username.length < 3 || username.length > 50) {
+        return res.status(400).json({ message: "Username must be between 3 and 50 characters." });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters." });
+    }
+
     try {
-        const existingUser = await User.findOne({ username: { $regex: `^${username}$`, $options: 'i' } });
+        const safeUsername = escapeRegex(username);
+        const existingUser = await User.findOne({ username: { $regex: `^${safeUsername}$`, $options: 'i' } });
+
         if (existingUser) {
-            return res.status(409).json({ message: "Username already taken. Please choose a different one." });
+            return res.status(409).json({ message: "This username is already taken. Please choose a different one." });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -65,11 +83,15 @@ const register = async (req, res) => {
 
         await newUser.save();
 
-        res.status(httpStatus.CREATED).json({ message: "User Registered" })
+        return res.status(httpStatus.CREATED).json({ message: "Account created successfully! You can now sign in." })
 
     } catch (e) {
         console.error("Registration error:", e);
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" })
+        // Handle MongoDB duplicate key error (race condition)
+        if (e.code === 11000) {
+            return res.status(409).json({ message: "This username is already taken. Please choose a different one." });
+        }
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Registration failed due to a server error. Please try again later." })
     }
 
 }

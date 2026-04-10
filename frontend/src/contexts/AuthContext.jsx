@@ -10,7 +10,7 @@ export const AuthContext = createContext({});
 // This is important on Render where window.__BACKEND_URL__ is set at runtime
 const getClient = () => axios.create({
     baseURL: `${server}/api/v1/users`,
-    timeout: 15000,
+    timeout: 60000, // 60 seconds (Render free tier can take 50s to wake up)
     headers: { "Content-Type": "application/json" }
 });
 
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
                 const networkErr = new Error();
                 networkErr.response = {
                     data: {
-                        message: `Cannot reach the server. Please check your connection or try again later. (URL: ${server})`
+                        message: `Cannot reach the server. Since this is a free tier on Render, the backend might take up to 60 seconds to wake up from inactivity. Please wait a minute and try again. (URL: ${server})`
                     }
                 };
                 throw networkErr;
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
                 const networkErr = new Error();
                 networkErr.response = {
                     data: {
-                        message: `Cannot reach the server. Please check your connection or try again later. (URL: ${server})`
+                        message: `Cannot reach the server. Since this is a free tier on Render, the backend might take up to 60 seconds to wake up from inactivity. Please wait a minute and try again. (URL: ${server})`
                     }
                 };
                 throw networkErr;

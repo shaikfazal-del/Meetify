@@ -85,20 +85,21 @@
 
 @media (max-width: 900px) {
     .buttonContainers {
-        gap: 0.8rem;
-        padding: 0.6rem;
+        gap: 0.5rem;
+        padding: 0.5rem;
         bottom: 15px;
-        width: 90%;
-        max-width: 400px;
+        width: 95%;
+        max-width: 380px;
+        flex-wrap: wrap;
     }
     
     .buttonContainers button {
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
     }
 
     .buttonContainers svg {
-        font-size: 1.4rem;
+        font-size: 1.2rem;
     }
 }
 
@@ -339,4 +340,6 @@
     border-radius: 12px;
     margin-top: 2rem;
     background: #000;
+    transform: scaleX(-1);
+    /* Corrects mirror view */
 }

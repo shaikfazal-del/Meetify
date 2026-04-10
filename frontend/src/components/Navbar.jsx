@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Box, IconButton, Avatar, Drawer, List, ListItem, ListItemText, useMediaQuery, useTheme } from '@mui/material';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 
 export default function Navbar() {
     const navigate = useNavigate();
@@ -92,7 +93,12 @@ export default function Navbar() {
                         sx: { width: '280px', background: '#0f0f1a', borderLeft: '1px solid rgba(255,255,255,0.1)' }
                     }}
                 >
-                    <Box sx={{ pt: 10, px: 2 }}>
+                    <Box sx={{ pt: 2, px: 2, pb: 4 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                            <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: 'white' }}>
+                                <CloseIcon />
+                            </IconButton>
+                        </Box>
                         <List>
                             {navItems.map((item) => (
                                 <ListItem button key={item.path} onClick={() => handleNav(item.path)}>

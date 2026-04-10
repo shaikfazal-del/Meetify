@@ -15,9 +15,23 @@
       even on Render where the static site is pre-built before deployment.
     -->
     <script>
-      var raw = "%REACT_APP_BACKEND_URL%";
-      // If CRA replaced the template AND it's a real URL, expose it globally.
-      window.__BACKEND_URL__ = (raw && !raw.startsWith("%") && raw !== "undefined") ? raw : "";
+      (function() {
+        var raw = "%REACT_APP_BACKEND_URL%";
+        // If CRA replaced the template AND it's a real URL, expose it globally.
+        var url = (raw && !raw.startsWith("%") && raw !== "undefined" && raw !== "null") ? raw : "";
+        window.__BACKEND_URL__ = url;
+
+        // Debug logging in development
+        if (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')) {
+          console.log('[Runtime] Backend URL configured:', url || '(not set, will use localhost)');
+        }
+
+        // Check if we're on HTTPS and warn about mixed content
+        if (url && url.startsWith('http:') && window.location.protocol === 'https:') {
+          console.error('[Runtime] WARNING: Backend URL is HTTP but page is HTTPS. This will cause mixed content errors.');
+          console.error('[Runtime] Please use HTTPS for your backend or update REACT_APP_BACKEND_URL');
+        }
+      })();
     </script>
   </head>
   <body>

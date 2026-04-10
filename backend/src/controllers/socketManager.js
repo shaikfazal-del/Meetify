@@ -9,24 +9,47 @@ export const connectToSocket = (server) => {
     const rawOrigin = process.env.CLIENT_URL
         ? process.env.CLIENT_URL.replace(/[^\x20-\x7E]/g, "").trim()
         : "";
-    const allowedOrigin = rawOrigin.length > 0 ? rawOrigin : "*";
+    const allowedOrigin = rawOrigin.length > 0 ? rawOrigin : ["http://localhost:3000", "http://localhost:5173"];
+
+    // Function to check if origin is allowed
+    const isOriginAllowed = (origin) => {
+        if (!origin) return true; // Allow no-origin (mobile, curl, etc)
+        if (typeof allowedOrigin === 'string') {
+            return origin === allowedOrigin || origin.startsWith(allowedOrigin);
+        }
+        if (Array.isArray(allowedOrigin)) {
+            return allowedOrigin.some(a => origin === a || origin.startsWith(a));
+        }
+        return true;
+    };
 
     const io = new Server(server, {
         cors: {
-            origin: allowedOrigin,
-            methods: ["GET", "POST"],
-            allowedHeaders: ["Content-Type", "Authorization"],
-            credentials: allowedOrigin !== "*"
+            origin: function(origin, callback) {
+                if (isOriginAllowed(origin) || /\.onrender\.com$/.test(origin)) {
+                    callback(null, true);
+                } else {
+                    console.warn(`Socket.io CORS blocked origin: ${origin}`);
+                    callback(null, false);
+                }
+            },
+            methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+            credentials: true
         },
-        transports: ["websocket", "polling"]
+        transports: ["websocket", "polling"],
+        pingTimeout: 60000,
+        pingInterval: 25000,
+        connectTimeout: 20000
     });
 
 
     io.on("connection", (socket) => {
-
-        console.log("SOMETHING CONNECTED")
+        console.log(`[Socket] New connection: ${socket.id} from ${socket.handshake.address}`);
 
         socket.on("join-call", (path) => {
+            const roomId = path || "/";
+            console.log(`[Socket] ${socket.id} joining room: ${roomId}`);
 
             if (connections[path] === undefined) {
                 connections[path] = []
@@ -35,16 +58,11 @@ export const connectToSocket = (server) => {
 
             timeOnline[socket.id] = new Date();
 
-            // connections[path].forEach(elem => {
-            //     io.to(elem)
-            // })
+            console.log(`[Socket] Room ${roomId} now has ${connections[path].length} participants:`, connections[path]);
 
             for (let a = 0; a < connections[path].length; a++) {
                 io.to(connections[path][a]).emit("user-joined", socket.id, connections[path])
             }
-
-            // Past messages are no longer sent to new users
-
         })
 
         socket.on("signal", (toId, message) => {
@@ -115,13 +133,17 @@ export const connectToSocket = (server) => {
             }
         })
 
-        socket.on("disconnect", () => {
+        socket.on("disconnect", (reason) => {
+            console.log(`[Socket] Disconnected: ${socket.id}, reason: ${reason}`);
             for (const [roomPath, participants] of Object.entries(connections)) {
                 const index = participants.indexOf(socket.id);
                 if (index !== -1) {
                     participants.splice(index, 1);
                     participants.forEach(pId => io.to(pId).emit('user-left', socket.id));
-                    if (participants.length === 0) delete connections[roomPath];
+                    if (participants.length === 0) {
+                        console.log(`[Socket] Room ${roomPath} is now empty, cleaning up`);
+                        delete connections[roomPath];
+                    }
                     break;
                 }
             }

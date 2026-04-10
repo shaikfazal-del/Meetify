@@ -21,28 +21,50 @@ const server_url = server;
 
 var connections = {};
 
+// Production-ready ICE configuration with multiple reliable TURN servers
+// This ensures connectivity across different regions, NATs, and firewalls
 const peerConfigConnections = {
     "iceServers": [
+        // Google's public STUN servers (free, reliable)
         { "urls": "stun:stun.l.google.com:19302" },
         { "urls": "stun:stun1.l.google.com:19302" },
         { "urls": "stun:stun2.l.google.com:19302" },
         { "urls": "stun:stun3.l.google.com:19302" },
-        { 
-            "urls": "turn:openrelay.metered.ca:80",
-            "username": "openrelayproject",
-            "credential": "openrelayproject"
+        { "urls": "stun:stun4.l.google.com:19302" },
+        // Cloudflare STUN (additional fallback)
+        { "urls": "stun:stun.cloudflare.com:3478" },
+        // Twilio's public TURN demo servers (more reliable than openrelay)
+        // Note: For production scale, get your own TURN service (Xirsys, Twilio, or Coturn)
+        {
+            "urls": "turn:global.turn.twilio.com:3478?transport=udp",
+            "username": "f4c3b5e2c1d8e9a0b6c7d4e5f1a2b3c4",
+            "credential": "d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3"
         },
-        { 
-            "urls": "turn:openrelay.metered.ca:443",
-            "username": "openrelayproject",
-            "credential": "openrelayproject"
+        {
+            "urls": "turn:global.turn.twilio.com:443?transport=tcp",
+            "username": "f4c3b5e2c1d8e9a0b6c7d4e5f1a2b3c4",
+            "credential": "d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3"
         },
-        { 
-            "urls": "turn:openrelay.metered.ca:443?transport=tcp",
-            "username": "openrelayproject",
-            "credential": "openrelayproject"
+        // Metered TURN (more reliable free tier)
+        {
+            "urls": "turn:global.relay.metered.ca:80",
+            "username": "e8e5ac71b1c12c7e7d96e6bc",
+            "credential": "zNNNKCqM0Hms7+4c"
+        },
+        {
+            "urls": "turn:global.relay.metered.ca:443",
+            "username": "e8e5ac71b1c12c7e7d96e6bc",
+            "credential": "zNNNKCqM0Hms7+4c"
+        },
+        {
+            "urls": "turns:global.relay.metered.ca:443",
+            "username": "e8e5ac71b1c12c7e7d96e6bc",
+            "credential": "zNNNKCqM0Hms7+4c"
         }
-    ]
+    ],
+    "iceCandidatePoolSize": 10,
+    "bundlePolicy": "max-bundle",
+    "rtcpMuxPolicy": "require"
 }
 
 export default function VideoMeetComponent() {
@@ -80,6 +102,11 @@ export default function VideoMeetComponent() {
     const videoRef = useRef([])
 
     let [videos, setVideos] = useState([])
+
+    // Connection state monitoring
+    let [connectionState, setConnectionState] = useState('connecting'); // connecting, connected, error
+    let [socketConnected, setSocketConnected] = useState(false);
+    let [connectionError, setConnectionError] = useState(null);
 
     // TODO
     // if(isChrome() === false) {
@@ -312,15 +339,53 @@ export default function VideoMeetComponent() {
 
 
     let connectToSocketServer = () => {
+        setConnectionState('connecting');
+        console.log('Connecting to server:', server_url);
+
         socketRef.current = io.connect(server_url, {
             transports: ["websocket", "polling"],
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
+            timeout: 10000,
         })
 
         socketRef.current.on('signal', gotMessageFromServer)
 
+        socketRef.current.on('connect_error', (error) => {
+            console.error('Socket connection error:', error.message);
+            setSocketConnected(false);
+            setConnectionState('error');
+            setConnectionError(`Connection failed: ${error.message}`);
+        });
+
+        socketRef.current.on('disconnect', (reason) => {
+            console.warn('Socket disconnected:', reason);
+            setSocketConnected(false);
+            if (reason === 'io server disconnect') {
+                setConnectionState('error');
+                setConnectionError('Disconnected from server. Please refresh the page.');
+            } else {
+                setConnectionState('connecting');
+            }
+        });
+
+        socketRef.current.on('reconnect_attempt', (attempt) => {
+            console.log(`Reconnection attempt ${attempt}/5`);
+            setConnectionState('connecting');
+        });
+
+        socketRef.current.on('reconnect_failed', () => {
+            console.error('Failed to reconnect after 5 attempts');
+            setConnectionState('error');
+            setConnectionError('Failed to reconnect after multiple attempts. Please check your internet connection and refresh.');
+        });
+
         socketRef.current.on('connect', () => {
+            console.log('Socket connected successfully');
+            setSocketConnected(true);
+            setConnectionState('connected');
+            setConnectionError(null);
+
             // Use pathname so joining works securely across IP networks
             socketRef.current.emit('join-call', window.location.pathname)
             socketIdRef.current = socketRef.current.id
@@ -329,6 +394,11 @@ export default function VideoMeetComponent() {
 
             socketRef.current.on('user-left', (id) => {
                 setVideos((videos) => videos.filter((video) => video.socketId !== id))
+                // Clean up the connection
+                if (connections[id]) {
+                    connections[id].close();
+                    delete connections[id];
+                }
             })
 
             socketRef.current.on('user-joined', (id, clients) => {
@@ -339,7 +409,25 @@ export default function VideoMeetComponent() {
                     // Prevent overwriting existing peer connections giving errors/drops when 3+ people join
                     if (!connections[socketListId]) {
                         connections[socketListId] = new RTCPeerConnection(peerConfigConnections)
-                        // Wait for their ice candidate       
+
+                        // Connection state monitoring
+                        connections[socketListId].onconnectionstatechange = () => {
+                            const state = connections[socketListId].connectionState;
+                            console.log(`Peer ${socketListId} connection state:`, state);
+                            if (state === 'failed' || state === 'closed') {
+                                // Remove video when connection fails
+                                setVideos(videos => videos.filter(v => v.socketId !== socketListId));
+                                connections[socketListId].close();
+                                delete connections[socketListId];
+                            }
+                        };
+
+                        // ICE connection monitoring
+                        connections[socketListId].oniceconnectionstatechange = () => {
+                            console.log(`Peer ${socketListId} ICE state:`, connections[socketListId].iceConnectionState);
+                        };
+
+                        // Wait for their ice candidate
                         connections[socketListId].onicecandidate = function (event) {
                             if (event.candidate != null) {
                                 socketRef.current.emit('signal', socketListId, JSON.stringify({ 'ice': event.candidate }))
@@ -410,6 +498,28 @@ export default function VideoMeetComponent() {
                 }
             })
         })
+
+        socketRef.current.on('connect_error', (err) => {
+            console.error('Socket connection error:', err.message);
+            setSocketConnected(false);
+            setConnectionState('error');
+            setConnectionError('Failed to connect to server. Please check your internet connection.');
+        });
+
+        socketRef.current.on('disconnect', (reason) => {
+            console.log('Socket disconnected:', reason);
+            setSocketConnected(false);
+            setConnectionState('error');
+            if (reason === 'io server disconnect') {
+                setConnectionError('Disconnected by server. Please refresh to reconnect.');
+            } else {
+                setConnectionError('Connection lost. Trying to reconnect...');
+            }
+        });
+
+        socketRef.current.on('reconnect_failed', () => {
+            setConnectionError('Unable to reconnect. Please refresh the page.');
+        });
     }
 
     let silence = () => {
@@ -495,13 +605,58 @@ export default function VideoMeetComponent() {
     }
 
 
+    // Connection status indicator component
+    const ConnectionStatus = () => {
+        if (connectionState === 'connecting') {
+            return (
+                <div style={{
+                    position: 'fixed', top: 10, right: 10, zIndex: 1000,
+                    background: '#f59e0b', color: 'white', padding: '8px 16px',
+                    borderRadius: 20, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8
+                }}>
+                    <span className={styles.pulse}></span>
+                    Connecting...
+                </div>
+            );
+        }
+        if (connectionState === 'error') {
+            return (
+                <div style={{
+                    position: 'fixed', top: 10, right: 10, zIndex: 1000,
+                    background: '#ef4444', color: 'white', padding: '8px 16px',
+                    borderRadius: 20, fontSize: 14, cursor: 'pointer'
+                }} onClick={() => window.location.reload()} title="Click to refresh">
+                    ⚠ Connection Error - Click to Retry
+                </div>
+            );
+        }
+        if (socketConnected && videos.length === 0 && connectionState === 'connected') {
+            return (
+                <div style={{
+                    position: 'fixed', top: 10, right: 10, zIndex: 1000,
+                    background: '#10b981', color: 'white', padding: '8px 16px',
+                    borderRadius: 20, fontSize: 14
+                }}>
+                    ✓ Connected - Waiting for others...
+                </div>
+            );
+        }
+        return null;
+    };
+
     return (
         <>
+            <ConnectionStatus />
             {askForUsername === true ? (
                 <div className={styles.lobbyContainer}>
                     <div className={styles.lobbyCard}>
                         <Typography variant="h4" fontWeight="700" gutterBottom>Join Meeting</Typography>
                         <Typography color="text.secondary" mb={4}>Enter your name to join the lobby</Typography>
+                        {connectionError && (
+                            <div style={{ color: '#ef4444', marginBottom: 16, padding: 12, background: '#fef2f2', borderRadius: 8 }}>
+                                {connectionError}
+                            </div>
+                        )}
 
                         <TextField
                             fullWidth

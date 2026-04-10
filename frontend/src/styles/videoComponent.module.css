@@ -343,3 +343,146 @@
     transform: scaleX(-1);
     /* Corrects mirror view */
 }
+
+/* Connection status indicator */
+.pulse {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(0.5);
+        opacity: 0.5;
+    }
+}
+
+/* Network quality indicator styles */
+.networkStatus {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.networkStatus.connecting {
+    background: #f59e0b;
+    color: white;
+}
+
+.networkStatus.connected {
+    background: #10b981;
+    color: white;
+}
+
+.networkStatus.error {
+    background: #ef4444;
+    color: white;
+    cursor: pointer;
+}
+
+.networkStatus.error:hover {
+    background: #dc2626;
+}
+
+/* Connection Status Indicator */
+.pulse {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    animation: pulse-animation 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-animation {
+    0% {
+        transform: scale(0.6);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.6);
+        opacity: 0.5;
+    }
+}
+
+/* Error message styling */
+.errorMessage {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+/* Connection status badge */
+.connectionBadge {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.connectionBadge.connecting {
+    background: #f59e0b;
+    color: white;
+}
+
+.connectionBadge.connected {
+    background: #10b981;
+    color: white;
+}
+
+.connectionBadge.error {
+    background: #ef4444;
+    color: white;
+    cursor: pointer;
+}
+
+/* Network quality indicator */
+.networkQuality {
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+}
+
+.networkQuality span {
+    width: 4px;
+    background: currentColor;
+    border-radius: 2px;
+    opacity: 0.3;
+}
+
+.networkQuality span.active {
+    opacity: 1;
+}

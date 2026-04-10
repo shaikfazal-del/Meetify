@@ -1,21 +1,70 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Container, Grid, Paper, useMediaQuery, useTheme } from '@mui/material';
+import {
+    Box, Typography, Button, Container, Grid, Paper,
+    useMediaQuery, useTheme, Dialog, DialogTitle, DialogContent,
+    DialogActions, TextField, Divider, IconButton, Snackbar, Alert
+} from '@mui/material';
 import Navbar from '../components/Navbar';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import ChatIcon from '@mui/icons-material/Chat';
 import SecurityIcon from '@mui/icons-material/Security';
+import CloseIcon from '@mui/icons-material/Close';
+import VideoCallIcon from '@mui/icons-material/VideoCall';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 export default function LandingPage() {
     const router = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+    const [guestDialogOpen, setGuestDialogOpen] = useState(false);
+    const [joinCode, setJoinCode] = useState('');
+    const [joinError, setJoinError] = useState('');
+    const [newMeetingCode, setNewMeetingCode] = useState('');
+    const [copySnackbar, setCopySnackbar] = useState(false);
+
     const features = [
         { title: 'HD Video', desc: 'Crystal clear video calls with adaptive resolution.', icon: <VideocamIcon fontSize="large" color="primary" /> },
         { title: 'In-Call Chat', desc: 'Share ideas and links via real-time messaging.', icon: <ChatIcon fontSize="large" color="secondary" /> },
         { title: 'Secure', desc: 'End-to-end encryption for your privacy.', icon: <SecurityIcon fontSize="large" color="primary" /> },
     ];
+
+    const handleOpenGuestDialog = () => {
+        // Generate a fresh meeting code each time the dialog opens
+        const freshCode = Math.random().toString(36).substring(2, 9);
+        setNewMeetingCode(freshCode);
+        setJoinCode('');
+        setJoinError('');
+        setGuestDialogOpen(true);
+    };
+
+    const handleJoinExisting = () => {
+        const code = joinCode.trim();
+        if (!code) {
+            setJoinError('Please enter a meeting code.');
+            return;
+        }
+        // Support full URLs pasted in — extract just the last segment
+        const extracted = code.includes('/') ? code.split('/').pop() : code;
+        if (!extracted) {
+            setJoinError('Invalid meeting code or link.');
+            return;
+        }
+        setGuestDialogOpen(false);
+        router(`/${extracted}`);
+    };
+
+    const handleStartNewMeeting = () => {
+        setGuestDialogOpen(false);
+        router(`/${newMeetingCode}`);
+    };
+
+    const handleCopyCode = () => {
+        navigator.clipboard.writeText(newMeetingCode).catch(() => {});
+        setCopySnackbar(true);
+    };
 
     return (
         <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -40,7 +89,7 @@ export default function LandingPage() {
                             <Button variant="contained" size="large" onClick={() => router('/auth')} sx={{ px: 4, py: 1.5 }}>
                                 Get Started Free
                             </Button>
-                            <Button variant="outlined" size="large" onClick={() => router('/aljk23')} sx={{ px: 4, py: 1.5 }}>
+                            <Button variant="outlined" size="large" onClick={handleOpenGuestDialog} sx={{ px: 4, py: 1.5 }}>
                                 Join as Guest
                             </Button>
                         </Box>
@@ -89,7 +138,131 @@ export default function LandingPage() {
                     </Grid>
                 </Box>
             </Container>
+
+            {/* ── Guest Join Dialog ─────────────────────────────────────── */}
+            <Dialog
+                open={guestDialogOpen}
+                onClose={() => setGuestDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        background: 'rgba(15,15,30,0.97)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '16px',
+                        backdropFilter: 'blur(20px)',
+                        color: 'white'
+                    }
+                }}
+            >
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+                    <Typography variant="h6" fontWeight="700">Join as Guest</Typography>
+                    <IconButton onClick={() => setGuestDialogOpen(false)} sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
+                <DialogContent sx={{ pt: 1 }}>
+                    {/* Option 1 — Join an existing meeting */}
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.7rem' }}>
+                            Join an existing meeting
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <TextField
+                                fullWidth
+                                id="guest-meeting-code"
+                                placeholder="Enter code or paste link"
+                                value={joinCode}
+                                onChange={(e) => { setJoinCode(e.target.value); setJoinError(''); }}
+                                onKeyDown={(e) => e.key === 'Enter' && handleJoinExisting()}
+                                error={!!joinError}
+                                helperText={joinError}
+                                size="small"
+                                variant="outlined"
+                                InputProps={{ style: { color: 'white' } }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                                        '&:hover fieldset': { borderColor: 'rgba(139,92,246,0.6)' },
+                                        '&.Mui-focused fieldset': { borderColor: '#8b5cf6' },
+                                    },
+                                    '& .MuiFormHelperText-root': { color: '#f87171' }
+                                }}
+                            />
+                            <Button
+                                id="guest-join-btn"
+                                variant="contained"
+                                onClick={handleJoinExisting}
+                                startIcon={<MeetingRoomIcon />}
+                                sx={{ whiteSpace: 'nowrap', minWidth: 'fit-content', px: 2 }}
+                            >
+                                Join
+                            </Button>
+                        </Box>
+                    </Box>
+
+                    <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 2 }}>
+                        <Typography variant="caption" color="text.secondary">OR</Typography>
+                    </Divider>
+
+                    {/* Option 2 — Start a new meeting */}
+                    <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.7rem' }}>
+                            Start a new meeting
+                        </Typography>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            p: 1.5,
+                            mb: 2,
+                            borderRadius: '8px',
+                            background: 'rgba(139,92,246,0.1)',
+                            border: '1px solid rgba(139,92,246,0.3)'
+                        }}>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', letterSpacing: 2, color: '#c4b5fd', fontSize: '1rem' }}>
+                                {newMeetingCode}
+                            </Typography>
+                            <IconButton size="small" onClick={handleCopyCode} sx={{ color: '#c4b5fd' }} title="Copy code">
+                                <ContentCopyIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                        <Button
+                            id="guest-new-meeting-btn"
+                            fullWidth
+                            variant="contained"
+                            size="large"
+                            startIcon={<VideoCallIcon />}
+                            onClick={handleStartNewMeeting}
+                            sx={{
+                                background: 'linear-gradient(135deg, #8b5cf6 0%, #0ea5e9 100%)',
+                                '&:hover': { background: 'linear-gradient(135deg, #7c3aed 0%, #0284c7 100%)' }
+                            }}
+                        >
+                            Start New Meeting
+                        </Button>
+                    </Box>
+                </DialogContent>
+
+                <DialogActions sx={{ px: 3, pb: 3 }}>
+                    <Button onClick={() => setGuestDialogOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Copy confirmation snackbar */}
+            <Snackbar
+                open={copySnackbar}
+                autoHideDuration={2000}
+                onClose={() => setCopySnackbar(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert severity="success" sx={{ width: '100%' }}>
+                    Meeting code copied!
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
-

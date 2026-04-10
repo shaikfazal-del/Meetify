@@ -7,6 +7,9 @@ import server from "../environment";
 
 export const AuthContext = createContext({});
 
+console.log("REACT_APP_BACKEND_URL:", process.env.REACT_APP_BACKEND_URL);
+console.log("Configured server URL:", server);
+
 const client = axios.create({
     baseURL: `${server}/api/v1/users`
 })
@@ -34,10 +37,12 @@ export const AuthProvider = ({ children }) => {
                 return request.data.message;
             }
         } catch (err) {
+            console.error("Register request failed:", err);
+            console.error("Target URL was:", `${server}/api/v1/users/register`);
             if (!err.response) {
                 // Network error - server unreachable
                 const networkErr = new Error();
-                networkErr.response = { data: { message: "Cannot reach server. Please check your connection or try again later." } };
+                networkErr.response = { data: { message: `Cannot reach server (${server}). Details: ${err.message}` } };
                 throw networkErr;
             }
             throw err;
@@ -56,9 +61,11 @@ export const AuthProvider = ({ children }) => {
                 router("/home")
             }
         } catch (err) {
+            console.error("Login request failed:", err);
+            console.error("Target URL was:", `${server}/api/v1/users/login`);
             if (!err.response) {
                 const networkErr = new Error();
-                networkErr.response = { data: { message: "Cannot reach server. Please check your connection or try again later." } };
+                networkErr.response = { data: { message: `Cannot reach server (${server}). Details: ${err.message}` } };
                 throw networkErr;
             }
             throw err;

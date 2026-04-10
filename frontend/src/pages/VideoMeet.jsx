@@ -62,7 +62,7 @@ export default function VideoMeetComponent() {
 
     let [screen, setScreen] = useState();
 
-    let [showModal, setModal] = useState(true);
+    let [showModal, setModal] = useState(false);
 
     let [screenAvailable, setScreenAvailable] = useState();
 
@@ -70,7 +70,7 @@ export default function VideoMeetComponent() {
 
     let [message, setMessage] = useState("");
 
-    let [newMessages, setNewMessages] = useState(3);
+    let [newMessages, setNewMessages] = useState(0);
 
     let [askForUsername, setAskForUsername] = useState(sessionStorage.getItem('inMeeting') !== 'true');
 

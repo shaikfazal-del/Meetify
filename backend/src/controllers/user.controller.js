@@ -5,17 +5,18 @@ import bcrypt, { hash } from "bcrypt"
 import crypto from "crypto"
 import { Meeting } from "../models/meeting.model.js";
 const login = async (req, res) => {
-
-    const { username, password } = req.body;
+    let { username, password } = req.body;
 
     if (!username || !password) {
-        return res.status(400).json({ message: "Please Provide" })
+        return res.status(400).json({ message: "Please Provide" });
     }
+    
+    username = username.trim();
 
     try {
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ username: { $regex: `^${username}$`, $options: 'i' } });
         if (!user) {
-            return res.status(httpStatus.NOT_FOUND).json({ message: "User Not Found" })
+            return res.status(httpStatus.NOT_FOUND).json({ message: "User Not Found" });
         }
 
 
@@ -39,14 +40,17 @@ const login = async (req, res) => {
 
 
 const register = async (req, res) => {
-    const { name, username, password } = req.body;
+    let { name, username, password } = req.body;
 
     if (!name || !username || !password) {
         return res.status(400).json({ message: "Please provide name, username, and password" });
     }
 
+    username = username.trim();
+    name = name.trim();
+
     try {
-        const existingUser = await User.findOne({ username });
+        const existingUser = await User.findOne({ username: { $regex: `^${username}$`, $options: 'i' } });
         if (existingUser) {
             return res.status(409).json({ message: "Username already taken. Please choose a different one." });
         }

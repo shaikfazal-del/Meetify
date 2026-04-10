@@ -333,6 +333,9 @@ export default function VideoMeetComponent() {
 
             socketRef.current.on('user-joined', (id, clients) => {
                 clients.forEach((socketListId) => {
+                    // Skip creating a connection to ourselves
+                    if (socketListId === socketIdRef.current) return;
+
                     // Prevent overwriting existing peer connections giving errors/drops when 3+ people join
                     if (!connections[socketListId]) {
                         connections[socketListId] = new RTCPeerConnection(peerConfigConnections)
@@ -345,9 +348,6 @@ export default function VideoMeetComponent() {
 
                         // Wait for their video stream
                         connections[socketListId].onaddstream = (event) => {
-                            console.log("BEFORE:", videoRef.current);
-                            console.log("FINDING ID: ", socketListId);
-
                             let videoExists = videoRef.current.find(video => video.socketId === socketListId);
 
                             if (videoExists) {

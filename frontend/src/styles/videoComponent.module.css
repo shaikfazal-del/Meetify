@@ -47,7 +47,7 @@
     .meetUserVideoWrapper {
         width: 120px;
         height: 80px;
-        bottom: 100px;
+        bottom: 140px; /* Lifted higher to clear control strip */
         right: 15px;
     }
 }
@@ -191,6 +191,7 @@
         height: 100%;
         z-index: 100;
         border-left: none;
+        background: rgb(10, 10, 15); /* Solid background to obscure controls under it */
     }
 }
 

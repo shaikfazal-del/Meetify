@@ -44,7 +44,7 @@ export default function Navbar() {
             boxShadow: 'none',
             zIndex: (theme) => theme.zIndex.drawer + 1
         }}>
-            <Toolbar sx={{ justifyContent: 'space-between', padding: isMobile ? '0.5rem 1rem' : '0.5rem 2rem' }}>
+            <Toolbar sx={{ justifyContent: 'space-between', padding: isMobile ? '0.5rem 1.5rem' : '0.5rem 2rem' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
                     <VideocamIcon sx={{ color: '#8b5cf6', fontSize: isMobile ? '1.5rem' : '2rem', mr: 1 }} />
                     <Typography variant={isMobile ? "h6" : "h5"} component="div" sx={{ fontWeight: 700, letterSpacing: '-0.5px' }}>

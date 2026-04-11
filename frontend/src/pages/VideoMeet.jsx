@@ -610,7 +610,7 @@ export default function VideoMeetComponent() {
         if (connectionState === 'connecting') {
             return (
                 <div style={{
-                    position: 'fixed', top: 10, right: 10, zIndex: 1000,
+                    position: 'fixed', top: 10, left: 10, zIndex: 1000,
                     background: '#f59e0b', color: 'white', padding: '8px 16px',
                     borderRadius: 20, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8
                 }}>
@@ -622,7 +622,7 @@ export default function VideoMeetComponent() {
         if (connectionState === 'error') {
             return (
                 <div style={{
-                    position: 'fixed', top: 10, right: 10, zIndex: 1000,
+                    position: 'fixed', top: 10, left: 10, zIndex: 1000,
                     background: '#ef4444', color: 'white', padding: '8px 16px',
                     borderRadius: 20, fontSize: 14, cursor: 'pointer'
                 }} onClick={() => window.location.reload()} title="Click to refresh">
@@ -633,7 +633,7 @@ export default function VideoMeetComponent() {
         if (socketConnected && videos.length === 0 && connectionState === 'connected') {
             return (
                 <div style={{
-                    position: 'fixed', top: 10, right: 10, zIndex: 1000,
+                    position: 'fixed', top: 10, left: 10, zIndex: 1000,
                     background: '#10b981', color: 'white', padding: '8px 16px',
                     borderRadius: 20, fontSize: 14
                 }}>

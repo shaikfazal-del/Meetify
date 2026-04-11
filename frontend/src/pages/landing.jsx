@@ -168,7 +168,7 @@ export default function LandingPage() {
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.7rem' }}>
                             Join an existing meeting
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Box sx={{ display: 'flex', gap: { xs: 2, sm: 1 }, flexDirection: { xs: 'column', sm: 'row' } }}>
                             <TextField
                                 fullWidth
                                 id="guest-meeting-code"
@@ -195,7 +195,8 @@ export default function LandingPage() {
                                 variant="contained"
                                 onClick={handleJoinExisting}
                                 startIcon={<MeetingRoomIcon />}
-                                sx={{ whiteSpace: 'nowrap', minWidth: 'fit-content', px: 2 }}
+                                sx={{ whiteSpace: 'nowrap', minWidth: 'fit-content', px: 2, height: { xs: '40px', sm: 'auto' } }}
+                                fullWidth={isMobile}
                             >
                                 Join
                             </Button>

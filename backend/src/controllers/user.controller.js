@@ -100,8 +100,17 @@ const register = async (req, res) => {
 const getUserHistory = async (req, res) => {
     const { token } = req.query;
 
+    if (!token) {
+        return res.status(httpStatus.UNAUTHORIZED).json({ message: "Authentication required" });
+    }
+
     try {
         const user = await User.findOne({ token: token });
+
+        if (!user) {
+            return res.status(httpStatus.UNAUTHORIZED).json({ message: "Invalid or expired token" });
+        }
+
         const meetings = await Meeting.find({ user_id: user.username })
         res.json(meetings)
     } catch (e) {

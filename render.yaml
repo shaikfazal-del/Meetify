@@ -27,7 +27,7 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: build
     envVars:
-      - key: https://meetify-iv9d.onrender.com
+      - key: REACT_APP_BACKEND_URL
         # IMPORTANT: Set this manually in the Render dashboard to your backend URL.
         # Example: https://meetify-backend.onrender.com
         # Do NOT leave this blank — auth will break if the frontend can't reach the backend.

@@ -14,11 +14,15 @@ const withAuth = (WrappedComponent ) => {
 
         useEffect(() => {
             if(!isAuthenticated()) {
-                router("/auth")
+                router("/auth");
             }
-        }, [])
+        }, [router]);
 
-        return <WrappedComponent {...props} />
+        if (!isAuthenticated()) {
+            return null; // Don't render wrapped component while redirecting
+        }
+
+        return <WrappedComponent {...props} />;
     }
 
     return AuthComponent;

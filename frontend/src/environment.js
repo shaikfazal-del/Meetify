@@ -24,14 +24,15 @@ const inferRenderBackendUrl = () => {
     if (!isBrowser) return "";
     const hostname = window.location.hostname;
 
-    // Render pattern: service-name-xyz.onrender.com
-    const match = hostname.match(/^([a-zA-Z0-9-]+?)(?:-frontend)?(-[a-z0-9]+)?\.onrender\.com$/);
+    // Render pattern: service-name-xyz.onrender.com (supports numbers and hyphens)
+    const match = hostname.match(/^([a-zA-Z0-9-]+?)(?:-frontend)?(-[a-zA-Z0-9]+)?\.onrender\.com$/i);
     if (match) {
         const [, serviceName, uniqueId = ""] = match;
         // Try common backend naming patterns
         const possibleUrls = [
             `https://${serviceName}-backend${uniqueId}.onrender.com`,
             `https://${serviceName}-api${uniqueId}.onrender.com`,
+            `https://${serviceName}-server${uniqueId}.onrender.com`,
             `https://${serviceName}${uniqueId}.onrender.com`,
         ];
         console.log("[env] Render environment detected. Possible backend URLs:", possibleUrls);
@@ -60,6 +61,7 @@ if (runtimeUrl && runtimeUrl !== "undefined" && !runtimeUrl.startsWith("%")) {
     } else {
         console.warn("[env] Could not infer backend URL from hostname:", window.location.hostname);
         console.warn("[env] Please set REACT_APP_BACKEND_URL in Render environment variables!");
+        // Critical: Don't leave server empty - fallback to a placeholder that will show clear errors
         server = "";
     }
 } else {
@@ -78,4 +80,17 @@ try {
     server = "http://localhost:8000";
 }
 
-export default server;
+// FINAL SAFETY CHECK: If server is empty, set a placeholder that will cause clear API errors
+// instead of confusing "Cannot read property of undefined" errors
+if (!server || server === "") {
+    if (isRenderProduction) {
+        console.error("[env] CRITICAL: No backend URL configured for Render deployment!");
+        console.error("[env] Please set REACT_APP_BACKEND_URL environment variable in Render dashboard.");
+        // Set a dummy URL so axios requests fail with clear network errors instead of malformed requests
+        server = "https://backend-not-configured.onrender.com";
+    } else {
+        server = "http://localhost:8000";
+    }
+}
+
+export default server;

@@ -6,13 +6,23 @@ import server from "../environment";
 
 export const AuthContext = createContext({});
 
+// Validate server URL is configured
+const isValidServerUrl = () => {
+    return server && server !== "" && !server.includes("not-configured");
+};
+
 // Create the axios client lazily so it always picks up the latest server URL
 // This is important on Render where window.__BACKEND_URL__ is set at runtime
-const getClient = () => axios.create({
-    baseURL: `${server}/api/v1/users`,
-    timeout: 60000, // 60 seconds (Render free tier can take 50s to wake up)
-    headers: { "Content-Type": "application/json" }
-});
+const getClient = () => {
+    if (!isValidServerUrl()) {
+        throw new Error("Backend server URL is not configured. Please set REACT_APP_BACKEND_URL in your environment variables.");
+    }
+    return axios.create({
+        baseURL: `${server}/api/v1/users`,
+        timeout: 60000, // 60 seconds (Render free tier can take 50s to wake up)
+        headers: { "Content-Type": "application/json" }
+    });
+};
 
 export const AuthProvider = ({ children }) => {
     const authContext = useContext(AuthContext);

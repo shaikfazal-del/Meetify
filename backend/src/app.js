@@ -45,14 +45,16 @@ app.use(cors({
 
         const normalizedOrigin = origin.replace(/\/$/, ""); // Remove trailing slash
 
-        // Allow exact matches and Render preview subdomains (*.onrender.com)
+        // Allow exact matches and all Render subdomains (*.onrender.com)
         const allowed = allowedOrigins.some(allowed => {
             const normalizedAllowed = allowed.replace(/\/$/, "");
             return normalizedOrigin === normalizedAllowed ||
-                   normalizedOrigin === allowed ||
-                   // Allow Render preview URLs: *.onrender.com
-                   (/\.onrender\.com$/.test(normalizedOrigin) && allowed.includes('onrender.com'));
-        });
+                   normalizedOrigin === allowed;
+        }) ||
+        // Allow all Render subdomains (*.onrender.com) - check separately for flexibility
+        (/\.onrender\.com$/i.test(normalizedOrigin)) ||
+        // Allow any origin in development
+        (process.env.NODE_ENV !== "production" && normalizedOrigin.includes("localhost"));
 
         if (allowed) {
             callback(null, true);
